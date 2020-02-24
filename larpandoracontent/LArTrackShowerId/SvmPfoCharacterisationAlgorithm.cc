@@ -144,14 +144,13 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
 	else
 		{
 		float mcNeutrinoEnergy = (mcNeutrinoVector.front())->GetEnergy();
-    	PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "mcNeutrinoEnergy", mcNeutrinoEnergy); 
+		PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "mcNeutrinoEnergy", mcNeutrinoEnergy);
 		}
 
   	CaloHitList threeDCaloHitList;
   	LArPfoHelper::GetCaloHits(pPfo, TPC_3D, threeDCaloHitList);
 	int nHits = threeDCaloHitList.size();
     //std::cout << "nHits: " << nHits << std::endl;
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHits", nHits);
 	
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -168,7 +167,7 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
     LArMCParticleHelper::GetPfoMCParticleHitSharingMaps(pfoToHitsMap, {targetMCParticleToHitsMap}, pfoToMCHitSharingMap, mcToPfoHitSharingMap);
 	const CaloHitList &allHitsInPfo(pfoToHitsMap.at(pPfo));
 	const int nHitsInPfoTotal(allHitsInPfo.size());
-	int nHitsInBestMCParticleTotal(-1), bestMCParticlePdgCode(0), bestMCParticleIsTrack(-1);
+	int nHitsInBestMCParticleTotal(-1), bestMCParticlePdgCode(0);
 	int nHitsSharedWithBestMCParticleTotal(-1);
     CartesianVector threeDVertexPosition(0.f, 0.f, 0.f); // Mousam Vertex
     float mcEnergy = 0.f;
@@ -199,7 +198,6 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
 		 nHitsInBestMCParticleTotal = allMCHits.size();
 
 		 bestMCParticlePdgCode = pAssociatedMCParticle->GetParticleId();               
-		 bestMCParticleIsTrack = ((PHOTON != pAssociatedMCParticle->GetParticleId()) && (E_MINUS != std::abs(pAssociatedMCParticle->GetParticleId())) ? 1 : 0);
 		 threeDVertexPosition = pAssociatedMCParticle->GetVertex(); // Mousam Vertex
          mcEnergy = pAssociatedMCParticle->GetEnergy();
 	    }
@@ -208,11 +206,10 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
 	float trackShowerHitsRatio; 
 	trackShowerHitsRatio = hitsTrack/(hitsTrack + hitsShower);
 	//std::cout << "trackShowerHitsRatio: " << trackShowerHitsRatio << std::endl;
-	int newTrueTrackInt = (trackShowerHitsRatio >= 0.5 ? 1 : 0);
+	int trueTrackInt = (trackShowerHitsRatio >= 0.5 ? 1 : 0);
 	//std::cout << "newTrueTrackInt: " << newTrueTrackInt << std::endl;
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "newTrueTrackInt", newTrueTrackInt);
+
     //---------------------------------------------Get Pfo Energy---------------------------------------------------   
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "mcEnergy", mcEnergy);  
     //----------------------------------------------Get Momentum------------------------------------------------
     
     CartesianVector momentumVector(0.f, 0.f, 0.f);
@@ -223,9 +220,7 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
     float momentumY = momentumVector.GetY();
     float momentumZ = momentumVector.GetZ();
 
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pfoMomentumX", momentumX);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pfoMomentumY", momentumY);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pfoMomentumZ", momentumZ);    
+   
     //-------------------------------Interaction-Type-writing---------------------------------------------------------------------------------
 /*
     std::string interType; 
@@ -245,17 +240,6 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
     float xVertexPos = threeDVertexPosition.GetX();
     float yVertexPos = threeDVertexPosition.GetY();
     float zVertexPos = threeDVertexPosition.GetZ();
-
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "xVertexPos", xVertexPos);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "yVertexPos", yVertexPos);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "zVertexPos", zVertexPos);
-
-    //----------------------------isInFiducialVolume------------------------------------------------------------
-
-    int isInFiducialVolume(0);
-
-    isInFiducialVolume = (((((xVertexPos <= -20) && (xVertexPos >= -340)) || ((xVertexPos <= 340) && (xVertexPos >= 20))) && ((abs(yVertexPos) <= 584)) && (zVertexPos >= 200 || zVertexPos <= 1194)) ? 1 : 0);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "isInFiducialVolume", isInFiducialVolume);
     //-----------------------------------------------------------------------------------------------------------
 
     const float completeness((nHitsInBestMCParticleTotal > 0) ? static_cast<float>(nHitsSharedWithBestMCParticleTotal) / static_cast<float>(nHitsInBestMCParticleTotal) : 0.f);
@@ -284,17 +268,7 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
 		trueKineticEnergy = (mcEnergy - 0.493);
 	else if (abs(pdgCode) == 311)
 		trueKineticEnergy = (mcEnergy - 0.498);
-	PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "trueKineticEnergy", trueKineticEnergy);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "Completeness", completeness);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "Purity", purity);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pdgCode", pdgCode);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHitsSharedWithBestMCParticleTotal", nHitsSharedWithBestMCParticleTotal);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHitsInBestMCParticleTotal", nHitsInBestMCParticleTotal);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHitsInPfoTotal", nHitsInPfoTotal);
 
-    const int TrueTrackInt = bestMCParticleIsTrack;
-
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "TrueTrackInt", TrueTrackInt);
     // End purity, completeness
 
 	//----------------------------veto second version----------------------------------------------------
@@ -341,8 +315,8 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
 	
 	float showerProbability = (static_cast<float>(showerCount))/(static_cast<float>(hitToMCMap.size()));
 
-	mischaracterisedPfo = ((((showerProbability < 0.5) && (TrueTrackInt == 0)) || ((showerProbability > 0.5) && (TrueTrackInt == 1))) ? 1 : 0);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "mischaracterisedPfo", mischaracterisedPfo);
+	mischaracterisedPfo = ((((showerProbability < 0.5) && (trueTrackInt == 0)) || ((showerProbability > 0.5) && (trueTrackInt == 1))) ? 1 : 0);
+
     //-----------------------------------Writing 3D hit position in tree - Mousam----------------------------------------------------------------
     
     CaloHitList uCaloList;
@@ -403,18 +377,7 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
 	++nWEvent;
       };
 
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "uViewXHitVector", &uViewXHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "uViewYHitVector", &uViewYHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "uViewZHitVector", &uViewZHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "vViewXHitVector", &vViewXHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "vViewYHitVector", &uViewYHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "vViewZHitVector", &vViewZHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "wViewXHitVector", &wViewXHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "wViewYHitVector", &uViewYHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "wViewZHitVector", &wViewZHitVector);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nUEvent", nUEvent);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nVEvent", nVEvent);
-    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nWEvent", nWEvent);
+
     //----------------------------------------current Pfo Characterisation------------------------------------------------------------------------
 	float straightLineLength(-1.f);
     float dTdLMin(+std::numeric_limits<float>::max()), dTdLMax(-std::numeric_limits<float>::max());
@@ -477,8 +440,41 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
         if (nTrackLikeViews >= m_minTrackLikeViews)
             currentTrackInt = 1;
     }
-	PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "currentTrackInt", currentTrackInt);
+
     //--------------------------------------------------------------------------------------------------------------------------------------
+    
+    // Other informations
+
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHits", nHits);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "mcEnergy", mcEnergy);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pfoMomentumX", momentumX);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pfoMomentumY", momentumY);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pfoMomentumZ", momentumZ);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "xVertexPos", xVertexPos);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "yVertexPos", yVertexPos);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "zVertexPos", zVertexPos);
+	PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "trueKineticEnergy", trueKineticEnergy);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "Completeness", completeness);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "Purity", purity);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "pdgCode", pdgCode);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHitsSharedWithBestMCParticleTotal", nHitsSharedWithBestMCParticleTotal);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHitsInBestMCParticleTotal", nHitsInBestMCParticleTotal);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nHitsInPfoTotal", nHitsInPfoTotal);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "mischaracterisedPfo", mischaracterisedPfo);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "uViewXHitVector", &uViewXHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "uViewYHitVector", &uViewYHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "uViewZHitVector", &uViewZHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "vViewXHitVector", &vViewXHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "vViewYHitVector", &uViewYHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "vViewZHitVector", &vViewZHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "wViewXHitVector", &wViewXHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "wViewYHitVector", &uViewYHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "wViewZHitVector", &wViewZHitVector);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nUEvent", nUEvent);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nVEvent", nVEvent);
+    PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "nWEvent", nWEvent);
+	PandoraMonitoringApi::SetTreeVariable(this->GetPandora(), m_treeName.c_str(), "currentTrackInt", currentTrackInt);
+
     // Start variable writing
     const LArMvaHelper::MvaFeatureVector featureVector(LArMvaHelper::CalculateFeatures(chosenFeatureToolVector, this, pPfo));
 
@@ -582,7 +578,7 @@ bool SvmPfoCharacterisationAlgorithm::IsClearTrack(const pandora::ParticleFlowOb
         catch (const StatusCodeException &) {}
 */
 		{
-        const bool isTrueTrack(1 == bestMCParticleIsTrack);
+        const bool isTrueTrack(1 == trueTrackInt);
         const bool isMainMCParticleSet(0 != bestMCParticlePdgCode);
 
         if (isMainMCParticleSet)
